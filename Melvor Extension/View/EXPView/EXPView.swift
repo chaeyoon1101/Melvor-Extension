@@ -49,11 +49,7 @@ struct EXPView: View {
             }
         }
         .onAppear {
-            do {
-                try viewModel.load()
-            } catch let error {
-                print(error.localizedDescription)
-            }
+            print(viewModel.actions)
         }
     }
     

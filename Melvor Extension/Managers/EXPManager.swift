@@ -60,9 +60,11 @@ struct EXPManager {
             return Date()
         }
         
-        let speedMultiplier = max(UserDefaults.standard.integer(forKey: "speedMultiplier"), 1)
+        let speedMultiplier = SettingUserDefaults().speedMultiplier
         let levelDifference = nextEXP - currentEXP
-        let seconds = Int(levelDifference / expPerAction * timePerAction) / speedMultiplier
+        let seconds = Int(
+            (levelDifference / expPerAction * timePerAction) / speedMultiplier
+        )
         
         let calendar = Calendar.current
         let dateComponents = DateComponents(second: seconds)

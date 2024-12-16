@@ -9,14 +9,11 @@ import SwiftUI
 import WebKit
 
 struct WikiView: View {
+    @StateObject var settingUserDefaults = SettingUserDefaults()
+    
     @State var webView: WKWebView?
     @State var canGoBack: Bool = false
     @State var canGoForward: Bool = false
-    @State var lastURL: String = ""
-    
-    private let lastURLKey: String = "lastURL"
-    
-    private let mainPageURL: String = "https://wiki.melvoridle.com/w/Main_Page"
     
     var body: some View {
         ZStack(alignment: .bottomLeading) {
@@ -24,7 +21,7 @@ struct WikiView: View {
                 webView: $webView,
                 canGoBack: $canGoBack,
                 canGoForward: $canGoForward,
-                lastURL: $lastURL
+                lastURL: $settingUserDefaults.lastURL
             )
             
             HStack(spacing: 40) {
@@ -47,26 +44,6 @@ struct WikiView: View {
             }
             .padding()
         }
-        .onAppear {
-            loadLastURL()
-        }
-        .onChange(of: lastURL) { _, newValue in
-            updateLastURL(to: lastURL)
-        }
-    }
-    
-    private func loadLastURL() {
-        let isLoadLastURLActive = UserDefaults.standard.bool(forKey: "loadLastURLActive")
-        
-        if isLoadLastURLActive {
-            lastURL = UserDefaults.standard.string(forKey: lastURLKey) ?? mainPageURL
-        } else {
-            lastURL = mainPageURL
-        }
-    }
-    
-    private func updateLastURL(to lastURL: String) {
-        UserDefaults.standard.set(lastURL, forKey: lastURLKey)
     }
 }
 

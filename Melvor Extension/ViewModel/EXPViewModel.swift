@@ -8,10 +8,14 @@
 import Foundation
 
 class EXPViewModel: ObservableObject {
-    private let userDefaultsKey = "MELVOR_EXTENSION_EXP_ACTION_KEY"
     private let expManager = EXPManager()
     
-    @Published var actions: [Action] = []
+    @UserDefaultsStorage(.expActions) var actions: [Action] = [] {
+        didSet {
+            objectWillChange.send()
+        }
+    }
+    
     @Published var selectedAction: Action = .default
     @Published var isEditing: Bool = false
     
@@ -25,67 +29,33 @@ class EXPViewModel: ObservableObject {
         }
     }
     
-    func load() throws {
-        if let savedData = UserDefaults.standard.data(forKey: userDefaultsKey),
-           let loadedActions = try? JSONDecoder().decode([Action].self, from: savedData) {
-            actions = loadedActions
-            print("현재 작업중인 작업들: \(actions)")
-            return
-        }
-        
-        throw EXPError.loadError
-    }
-    
     func add() throws {
         actions.append(selectedAction)
         
-        if let encodedData = try? JSONEncoder().encode(actions) {
-            try saveUserDefaults(encodedData)
-            
-            let endTime = expManager.calculateEndTime(selectedAction)
-            NotificationManager.instance.addNotification(at: endTime, action: selectedAction)
-        } else {
-            throw EXPError.addError
-        }
+        let endTime = expManager.calculateEndTime(selectedAction)
+        NotificationManager.instance.addNotification(at: endTime, action: selectedAction)
     }
     
     func update() throws {
-        let updatedActions = actions.map { // 저장하는 action(파라미터)과 같은 id가 있다면 변경된 action으로 업데이트
-            $0.id == selectedAction.id ? selectedAction : $0
+        actions = actions.map { // 업데이트하는 action과 같은 id가 있다면 변경 된 action으로 업데이트
+            let isUpdatingAction = $0.id == selectedAction.id
+            
+            return isUpdatingAction ? selectedAction : $0
         }
         
-        if let encodedData = try? JSONEncoder().encode(updatedActions) {
-            try saveUserDefaults(encodedData)
-            
-            let endTime = expManager.calculateEndTime(selectedAction)
-            NotificationManager.instance.updateNotification(
-                at: endTime,
-                action: selectedAction
-            )
-        } else {
-            throw EXPError.updateError
-        }
+        let endTime = expManager.calculateEndTime(selectedAction)
+        NotificationManager.instance.updateNotification(
+            at: endTime,
+            action: selectedAction
+        )
     }
     
     func delete() throws {
-        let updatedAction = actions.filter {
+        actions = actions.filter {
             $0.id != selectedAction.id
         }
         
-        if actions.count != updatedAction.count,
-        let encodedData = try? JSONEncoder().encode(updatedAction) {
-            try saveUserDefaults(encodedData)
-            
-            NotificationManager.instance.deleteNotification(action: selectedAction)
-        } else {
-            throw EXPError.deleteError
-        }
-    }
-    
-    private func saveUserDefaults(_ data: Data) throws {
-        UserDefaults.standard.set(data, forKey: userDefaultsKey)
-        
-        try load()
+        NotificationManager.instance.deleteNotification(action: selectedAction)
     }
     
     func updateSelectedAction(_ action: Action) {
