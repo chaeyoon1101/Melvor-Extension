@@ -111,21 +111,14 @@ struct EXPModalView: View {
             isNotificationEnabled: isNotificationEnabled
         )
         
-        do {
-            try viewModel.save(action: saveAction)
-        } catch let error {
-            print("Action save 에러: ", error.localizedDescription)
-        }
+        let operation: EXPOperation = viewModel.isEditing ? .update : .add
+        viewModel.handle(operation: operation, for: saveAction)
         
         dismiss()
     }
     
     func delete() {
-        do {
-            try viewModel.delete()
-        } catch let error {
-            print(error.localizedDescription)
-        }
+        viewModel.handle(operation: .delete, for: viewModel.selectedAction)
     }
     
     func dismiss() {

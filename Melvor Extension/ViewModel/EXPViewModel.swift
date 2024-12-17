@@ -8,35 +8,38 @@
 import Foundation
 
 class EXPViewModel: ObservableObject {
-    private let expManager = EXPManager()
-    
     @UserDefaultsStorage(.expActions) var actions: [Action] = [] {
         didSet {
             objectWillChange.send()
         }
     }
     
+    private let expManager = EXPManager()
+    
     @Published var selectedAction: Action = .default
     @Published var isEditing: Bool = false
     
-    func save(action: Action) throws {
+    func handle(operation: EXPOperation, for action: Action) {
         selectedAction = action
         
-        if isEditing {
-            try update()
-        } else {
-            try add()
+        switch operation {
+        case .add:
+            add()
+        case .update:
+            update()
+        case .delete:
+            delete()
         }
     }
     
-    func add() throws {
+    private func add() {
         actions.append(selectedAction)
         
         let endTime = expManager.calculateEndTime(selectedAction)
         NotificationManager.instance.addNotification(at: endTime, action: selectedAction)
     }
     
-    func update() throws {
+    private func update() {
         actions = actions.map { // 업데이트하는 action과 같은 id가 있다면 변경 된 action으로 업데이트
             let isUpdatingAction = $0.id == selectedAction.id
             
@@ -50,35 +53,11 @@ class EXPViewModel: ObservableObject {
         )
     }
     
-    func delete() throws {
+    private func delete() {
         actions = actions.filter {
             $0.id != selectedAction.id
         }
         
         NotificationManager.instance.deleteNotification(action: selectedAction)
-    }
-    
-    func updateSelectedAction(_ action: Action) {
-        selectedAction = action
-    }
-}
-
-enum EXPError: LocalizedError {
-    case loadError
-    case addError
-    case updateError
-    case deleteError
-    
-    var errorDescription: String? {
-        switch self {
-        case .loadError:
-            return "작업 로드 실패"
-        case .addError:
-            return "작업 추가 실패"
-        case .updateError:
-            return "작업 업데이트 실패"
-        case .deleteError:
-            return "작업 삭제 실패"
-        }
     }
 }
